@@ -1,0 +1,114 @@
+{% extends "layout.html" %}
+{% block title %}Recommendation{% endblock %}
+{% block main %}
+
+<div class="min-vh-100 d-flex align-items-center justify-content-center py-5" style="background-color: #f9f9f9;">
+    <div class="form-container text-center">
+        <h1 id="stock-recommendations-for-you" class="mb-4" style="font-family: Arial, sans-serif; font-weight: bold; color: #3cb371;">
+            Stock recommendations for you
+        </h1>
+
+        <form action="/ai" method="post" id="recommendation-form">
+            <div class="form-group mb-4">
+                <p class="mb-2">I want recommendations for stock in:</p>
+                <div class="bubbly-picker">
+                    <input type="radio" id="all" name="industry" value="All industries">
+                    <label for="all">All industries</label>
+                    <input type="radio" id="tech" name="industry" value="Technology">
+                    <label for="tech">Technology</label>
+                    <input type="radio" id="healthcare" name="industry" value="Healthcare">
+                    <label for="healthcare">Healthcare</label>
+                    <input type="radio" id="finance" name="industry" value="Finance">
+                    <label for="finance">Finance</label>
+                    <input type="radio" id="energy" name="industry" value="Energy">
+                    <label for="energy">Energy</label>
+                    <input type="radio" id="consumer" name="industry" value="Consumer Goods">
+                    <label for="consumer">Consumer Goods</label>
+                </div>
+            </div>
+
+            <div class="form-group mb-4">
+                <p class="mb-2">With:</p>
+                <div class="bubbly-picker">
+                    <input type="radio" id="low_risk" name="risk" value="Low Risk">
+                    <label for="low_risk">Low Risk</label>
+                    <input type="radio" id="moderate_risk" name="risk" value="Moderate Risk">
+                    <label for="moderate_risk">Moderate Risk</label>
+                    <input type="radio" id="high_risk" name="risk" value="High Risk">
+                    <label for="high_risk">High Risk</label>
+                </div>
+            </div>
+
+            <div class="form-group mb-4">
+                <p class="mb-2">And:</p>
+                <div class="bubbly-picker">
+                    <input type="radio" id="low_return" name="reward" value="Low Return">
+                    <label for="low_return">Low Return</label>
+                    <input type="radio" id="moderate_return" name="reward" value="Moderate Return">
+                    <label for="moderate_return">Moderate Return</label>
+                    <input type="radio" id="high_return" name="reward" value="High Return">
+                    <label for="high_return">High Return</label>
+                </div>
+            </div>
+
+            <div class="form-group mb-4">
+                <p class="mb-2">Stocks should yield:</p>
+                <div class="bubbly-picker">
+                    <input type="radio" id="no_pref" name="dividend" value="No preference">
+                    <label for="no_pref">No preference</label>
+                    <input type="radio" id="low_div" name="dividend" value="Low Dividend">
+                    <label for="low_div">Low Dividend</label>
+                    <input type="radio" id="moderate_div" name="dividend" value="Moderate Dividend">
+                    <label for="moderate_div">Moderate Dividend</label>
+                    <input type="radio" id="high_div" name="dividend" value="High Dividend">
+                    <label for="high_div">High Dividend</label>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-custom w-100 mb-4" id="submit-button">Get Recommendations</button>
+        </form>
+
+        <div id="recommendations-container">
+            {% if recommendations %}
+                {% for stock in recommendations %}
+                    <div class="stock-recommendation mb-4 p-3 border rounded">
+                        <h2>{{ stock.stock_name }}</h2>
+                        <p><strong>Symbol:</strong> {{ stock.stock_symbol }}</p>
+                        <p><strong>Current Price:</strong> ${{ stock.current_price }}</p>
+                        <p><strong>Market Cap:</strong> ${{ stock.market_cap | format_number }}</p>
+                        <p><strong>P/E Ratio:</strong> {{ stock.pe_ratio }}</p>
+                        <p><strong>Price Trend:</strong> {{ stock.price_trend }}</p>
+                        <p><strong>Dividend Yield:</strong> {{ stock.dividend_yield }}</p>
+                        <ul class="list-unstyled">
+                            <li>{{ stock.reason1 }}</li>
+                            <li>{{ stock.reason2 }}</li>
+                        </ul>
+                    </div>
+                    <hr>
+                {% endfor %}
+            {% else %}
+                <p>No recommendations available at the moment.</p>
+            {% endif %}
+        </div>
+
+        <a href="/transactions" class="btn btn-secondary w-100">Go to purchase</a>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if there are any recommendations
+        {% if recommendations %}
+            // Scroll to the "Get Recommendations" button after form submission so user can access the recommendations right away
+            var submitButton = document.getElementById('submit-button');
+            if (submitButton) {
+                window.scrollTo({
+                    top: submitButton.offsetTop - 50, // Adjust the offset as needed
+                    behavior: 'smooth'
+                });
+            }
+        {% endif %}
+    });
+</script>
+
+{% endblock %}

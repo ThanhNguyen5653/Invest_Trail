@@ -1,0 +1,93 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Marketplace
+{% endblock %}
+
+{% block main %}
+    <div class="container min-vh-100">
+
+        <!-- Search Bar -->
+        <div class="d-flex justify-content-center mb-4">
+            <form id="search-form" class="w-75">
+                <div class="input-group">
+                    <input type="text" class="form-control" name="search_query" placeholder="Look up a stock price by symbol..." aria-label="Search for stocks" aria-describedby="search-button" maxlength="6" autocomplete="off">
+                    <button class="btn btn-outline-success" type="submit" id="search-button">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Search Results -->
+
+        <div id="search-results" class="d-none">
+            <div class="mt-4 text-center">
+                <h3 id="result-symbol" class="fw-semibold text-success"></h3>
+                <h5 id="result-name" class="text-muted"></h5> <!-- Display stock name -->
+                <p id="result-price" class="text-success"></p>
+            </div>
+        </div>
+
+        <br>
+
+        <!-- Buy and Sell form -->
+        <div class="d-flex justify-content-center">
+            <form action="/transactions" method="post" class="p-2 border rounded-3 shadow-sm bg-light-success w-75">
+                <h2 class="text-center text-success mb-2">Buy or Sell Stocks</h2>
+                <h6 class="text-center text-success mb-2">You have: ${{ "{:.2f}".format(user_cash) }}</h6>
+
+                <!-- Stock symbol input -->
+                <div class="mb-1">
+                    <label for="symbol" class="form-label">Symbol</label>
+                    <input type="text" name="symbol" id="symbol" class="form-control" placeholder="Stock symbol" maxlength="6" required>
+                </div>
+
+                <!-- Shares input -->
+                <div class="mb-1">
+                    <label for="shares" class="form-label">Shares</label>
+                    <input type="text" name="shares" inputmode="numeric" id="shares" class="form-control" placeholder="Amount (1 decimal for fractional)" pattern="^\d*(\.\d{1})?$" title="Please enter a number with up to one decimal place" required>
+                </div>
+
+                <!-- Buy and Sell buttons -->
+                <div class="d-flex justify-content-between">
+                    <button type="submit" name="action" value="buy" class="btn btn-success btn-large">Buy</button>
+                    <button type="submit" name="action" value="sell" class="btn btn-danger btn-large">Sell</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Include this JavaScript at the end of your HTML -->
+    <script>
+        document.getElementById('search-form').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent the form from submitting normally
+
+            const formData = new FormData(this);
+            fetch('/transactions', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error); // Display error message
+                } else {
+                    // Display results with a smooth transition
+                    const results = document.getElementById('search-results');
+                    document.getElementById('result-symbol').textContent = data.symbol;
+                    document.getElementById('result-name').textContent = data.name; // Display stock name
+                    document.getElementById('result-price').textContent = `Price per share: $${data.price}`;
+
+                    results.classList.remove('d-none');
+                    results.classList.add('show');
+                    setTimeout(() => {
+                        results.classList.add('fade-in');
+                    }, 1000); // Adjust the timeout if necessary
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+    </script>
+{% endblock %}

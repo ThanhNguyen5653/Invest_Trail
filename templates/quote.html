@@ -1,0 +1,28 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Quote
+{% endblock %}
+
+{% block main %}
+    <div class="container d-flex flex-column align-items-center min-vh-100 pt-2">
+        <div class="col-md-8 col-lg-6 mt-4">
+            <h2 class="text-success text-center mb-4">Find Stock Price</h2>
+            <form action="/quote" method="post" class="p-4 border rounded-3 shadow-sm ">
+                <div class="mb-3">
+                    <label for="symbol" class="form-label">Symbol</label>
+                    <input type="text" name="symbol" id="symbol" placeholder="symbol" autocomplete="off" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-success w-100">Look Up</button>
+            </form>
+            {% if quote %}
+            <div class="mt-4 text-center">
+                <h3 class="fw-semibold text-success">{{ quote['symbol'] }}</h3>
+                <p class="text-success">Price per share: ${{ "{:.2f}".format(quote['price']) }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
+
+

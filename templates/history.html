@@ -1,0 +1,183 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Transactions history
+{% endblock %}
+
+{% block main %}
+    <h1>Transactions history</h1>
+    <br>
+
+    <!-- Search input -->
+    <input type="text" id="search-input" class="form-control" placeholder="Search for stock symbol..." onkeyup="searchTable()">
+    <br>
+
+    <div id="transactions-container">
+        <!-- Existing table code -->
+        <table class="table table-striped table-bordered table-hover" id="transaction-table">
+            <thead class="thead-dark">
+                <tr>
+                    <th class="sortable" onclick="sortTable(0)">Symbol <span class="sort-indicator">&#9651;</span></th>
+                    <th class="sortable" onclick="sortTable(1)">Shares <span class="sort-indicator">&#9651;</span></th>
+                    <th class="sortable" onclick="sortTable(2)">Price <span class="sort-indicator">&#9651;</span></th>
+                    <th class="sortable" onclick="sortTable(3)">Purchased time <span class="sort-indicator">&#9651;</span></th>
+                </tr>
+            </thead>
+            <tbody id="transaction-body">
+                {% for transaction in transaction_list %}
+                <tr>
+                    <td>{{ transaction.symbol }}</td>
+                    <td>{{ transaction.shares }}</td>
+                    <td>${{ "{:.2f}".format(transaction.price) }}</td>
+                    <td>{{ transaction.timestamp }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Load More Button -->
+        {% if more_records %}
+        <button id="load-more" class="btn btn-custom btn-center" onclick="loadMore()">Load More</button>
+        {% endif %}
+    </div>
+
+
+    <script>
+        let currentSortColumn = null;
+
+        // JavaScript function to filter the table based on the search input
+        function searchTable() {
+            const input = document.getElementById("search-input");
+            const filter = input.value.toUpperCase();
+            const table = document.getElementById("transaction-table");
+            const rows = table.getElementsByTagName("tr");
+
+            // Loop through all table rows, and hide those that don't match the search query
+            for (let i = 1; i < rows.length; i++) {  // Start from 1 to skip the header row
+                const symbolCell = rows[i].getElementsByTagName("td")[0];  // The first cell is the symbol
+                if (symbolCell) {
+                    const txtValue = symbolCell.textContent || symbolCell.innerText;
+                    if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                        rows[i].style.display = "";  // Show the row if match is found
+                    } else {
+                        rows[i].style.display = "none";  // Hide the row if no match
+                    }
+                }
+            }
+        }
+
+        // Existing sortTable function
+        function clearSortIndicators() {
+            const indicators = document.querySelectorAll(".sort-indicator");
+            indicators.forEach(indicator => {
+                indicator.innerHTML = "&#9651;";  // Reset to default indicator (up arrow)
+            });
+        }
+
+        function clearHeaderColors() {
+            const headers = document.querySelectorAll("#transaction-table th");
+            headers.forEach(header => {
+                header.classList.remove("sorted-header");  // Remove previous highlight
+            });
+        }
+
+        function sortTable(n) {
+            console.log("Sorting column", n);  // Debugging output
+
+            const table = document.getElementById("transaction-table");
+            let rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+            switching = true;
+            dir = "asc";  // Set the sorting direction to ascending initially
+
+            clearSortIndicators();  // Clear previous sort indicators
+            clearHeaderColors();  // Clear previous header highlights
+
+            while (switching) {
+                switching = false;
+                rows = table.rows;
+                for (i = 1; i < (rows.length - 1); i++) {
+                    shouldSwitch = false;
+                    x = rows[i].getElementsByTagName("TD")[n];
+                    y = rows[i + 1].getElementsByTagName("TD")[n];
+
+                    if (n === 2) {  // Price column is numeric
+                        if (dir === "asc" && parseFloat(x.innerHTML.replace('$', '')) > parseFloat(y.innerHTML.replace('$', ''))) {
+                            shouldSwitch = true;
+                            break;
+                        } else if (dir === "desc" && parseFloat(x.innerHTML.replace('$', '')) < parseFloat(y.innerHTML.replace('$', ''))) {
+                            shouldSwitch = true;
+                            break;
+                        }
+                    } else if (n === 1) {  // Shares column is numeric
+                        if (dir === "asc" && parseInt(x.innerHTML) > parseInt(y.innerHTML)) {
+                            shouldSwitch = true;
+                            break;
+                        } else if (dir === "desc" && parseInt(x.innerHTML) < parseInt(y.innerHTML)) {
+                            shouldSwitch = true;
+                            break;
+                        }
+                    } else {  // Symbol and Purchased time columns are text
+                        if (dir === "asc" && x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+                            shouldSwitch = true;
+                            break;
+                        } else if (dir === "desc" && x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
+                            shouldSwitch = true;
+                            break;
+                        }
+                    }
+                }
+                if (shouldSwitch) {
+                    rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                    switching = true;
+                    switchcount++;
+                } else {
+                    if (switchcount === 0 && dir === "asc") {
+                        dir = "desc";
+                        switching = true;
+                    }
+                }
+            }
+
+            // Add sort indicator (up or down arrow) based on sorting direction
+            const th = table.getElementsByTagName("TH")[n];
+            const indicator = th.querySelector(".sort-indicator");
+            indicator.innerHTML = dir === "asc" ? "&#9650;" : "&#9660;";  // Up or Down arrow
+
+            // Apply sorted-header class to the sorted column header
+            th.classList.add("sorted-header");
+        }
+
+
+        function clearHeaderColors() {
+            const headers = document.querySelectorAll("#transaction-table th");
+            headers.forEach(header => {
+                header.classList.remove("sorted-header");  // Remove previous highlight
+            });
+        }
+
+        // Function to handle loading more page for data
+        let currentPage = {{ page }};
+        const transactionsContainer = document.getElementById('transactions-container');
+        const loadMoreButton = document.getElementById('load-more');
+
+        function loadMore() {
+            currentPage++;
+            fetch(`/history?page=${currentPage}`)
+                .then(response => response.text())
+                .then(data => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(data, 'text/html');
+                    const newRows = doc.querySelector('#transaction-body').innerHTML;
+                    const newMoreRecords = doc.querySelector('#load-more') ? true : false;
+
+                    document.querySelector('#transaction-body').innerHTML += newRows;
+
+                    if (!newMoreRecords) {
+                        loadMoreButton.style.display = 'none';
+                    }
+                })
+                .catch(error => console.error('Error loading more data:', error));
+        }
+
+    </script>
+{% endblock %}

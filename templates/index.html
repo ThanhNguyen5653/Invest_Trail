@@ -1,0 +1,211 @@
+{% extends "layout.html" %}
+
+{% block title %}
+Portfolio
+{% endblock %}
+
+{% block main %}
+<div class="container-fluid min-vh-100">
+
+    <h1 id="portfolio" class="text-center fw-bold text-success mb-4">Portfolio</h1>
+    <div class="table-responsive mt-4">
+        <table class="table table-hover table-striped table-bordered shadow-sm">
+            <thead class="table-success">
+                <tr>
+                    <th class="text-center">Symbol</th>
+                    <th class="text-center">Shares</th>
+                    <th class="text-center">Average Price</th>
+                    <th class="text-center">Market Price</th>
+                    <th class="text-center">Total Value</th>
+                    <th class="text-center">Profit/Loss</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stock in stocks %}
+                <tr class="stock-row">
+                    <td class="text-center">{{ stock.symbol }}</td>
+                    <td class="text-center">{{ stock.total_shares | format_number }}</td>
+                    <td class="text-center">${{ "{:.2f}".format(stock.average_price) }}</td>
+                    <td class="text-center">${{ "{:.2f}".format(stock.market_price) }}</td>
+                    <td class="text-center">${{ "{:.2f}".format(stock.value) }}</td>
+                    <td class="text-center {% if stock.profit > 0 %}text-success{% elif stock.profit < 0 %}text-danger{% endif %}">
+                        ${{ "{:.2f}".format(stock.profit) }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot class="table-success">
+                <tr>
+                    <td colspan="4" class="text-end fw-bold">Cash</td>
+                    <td colspan="2" class="text-center">${{ "{:.2f}".format(cash) }}</td>
+                </tr>
+                <tr>
+                    <td colspan="4" class="text-end fw-bold">Net Worth</td>
+                    <td colspan="2" class="text-center">${{ "{:.2f}".format(networth) }}</td>
+                </tr>
+                <tr>
+                    <td colspan="4" class="text-end fw-bold">Total Profit/Loss</td>
+                    <td colspan="2" class="text-center {% if profit > 0 %}text-success{% elif profit < 0 %}text-danger{% endif %}">
+                        ${{ "{:.2f}".format(profit) }}
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <!-- Chart Container -->
+    <br>
+    <div class="chart-wrapper">
+        <div class="chart-container">
+            <canvas id="profitChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+
+    <!-- Modal Structure -->
+    <div class="modal fade" id="stockModal" tabindex="-1" aria-labelledby="stockModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="stockModalLabel">Buy or Sell Stock</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="stockForm" action="/perform_action" method="post">
+                    <input type="hidden" id="stockSymbol" name="symbol">
+                    <input type="hidden" id="actionType" name="action"> <!-- Add this hidden input field -->
+                    <div class="mb-3">
+                        <label for="shares" class="form-label">Shares</label>
+                        <input type="text" inputmode="numeric" class="form-control" id="shares" name="shares" placeholder="Amount (1 decimal for fractional)" pattern="^\d*(\.\d{1})?$" title="Please enter a number with up to one decimal place" required>
+                    </div>
+                    <div class="mb-3 button-container">
+                        <button type="button" class="action-button" id="buyAction" data-action="buy">Buy</button>
+                        <button type="button" class="action-button" id="sellAction" data-action="sell">Sell</button>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-cancel btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-submit">Submit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/luxon@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Chart.js setup
+    const ctx = document.getElementById('profitChart').getContext('2d');
+    let labels = {{ dates|tojson }};
+    let profits = {{ profits|tojson }};
+    let parsedLabels = labels.map(date => new Date(`${date}T00:00:00`));
+    const latestData = parsedLabels.map((date, index) => ({
+        x: date,
+        y: profits[index]
+    }));
+    let lineColor = profits.some(profit => profit > 0) ? 'green' : profits.some(profit => profit < 0) ? 'red' : 'grey';
+
+    const profitChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: parsedLabels,
+            datasets: [{
+                label: 'Daily Profit',
+                data: latestData,
+                borderColor: lineColor,
+                backgroundColor: 'rgba(60, 179, 113, 0.1)',
+                borderWidth: 2,
+                pointRadius: 4,
+                pointBackgroundColor: latestData.map(dataPoint => dataPoint.y > 0 ? 'green' : dataPoint.y < 0 ? 'red' : 'grey'),
+                pointHoverRadius: 6,
+                pointHoverBackgroundColor: 'yellow',
+                fill: 'start'
+            }]
+        },
+        options: {
+            scales: {
+                x: {
+                    type: 'time',
+                    display: false,
+                    time: {
+                        unit: 'day',
+                        tooltipFormat: 'yyyy-MM-dd',
+                        displayFormats: {
+                            day: 'yyyy-MM-dd'
+                        }
+                    },
+                    grid: {
+                        display: false
+                    }
+                },
+                y: {
+                    display: false,
+                    grid: {
+                        display: false
+                    },
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `Profit: $${context.raw.y.toFixed(2)}`;
+                        }
+                    }
+                }
+            },
+            elements: {
+                line: {
+                    tension: 0
+                }
+            },
+            animation: {
+                duration: 2000,
+                easing: 'easeInOutQuad'
+            },
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    // Modal setup
+    document.addEventListener('DOMContentLoaded', function() {
+        const stockModal = new bootstrap.Modal(document.getElementById('stockModal'));
+
+        document.querySelectorAll('.stock-row').forEach(row => {
+            row.addEventListener('click', function() {
+                const symbol = this.querySelector('td:first-child').innerText; // Get stock symbol from the row
+                const modalTitle = document.getElementById('stockModalLabel');
+                const stockSymbolInput = document.getElementById('stockSymbol');
+                const actionInput = document.getElementById('actionType'); // Get action input field
+
+                modalTitle.innerText = `Buy or Sell ${symbol}`; // Set modal title
+                stockSymbolInput.value = symbol; // Set hidden field value
+
+                // Show the modal
+                stockModal.show();
+            });
+        });
+
+        // Add click event listeners for buttons to set action field value
+        document.querySelectorAll('.action-button').forEach(button => {
+            button.addEventListener('click', function() {
+                document.querySelectorAll('.action-button').forEach(btn => btn.classList.remove('selected'));
+                this.classList.add('selected');
+
+                // Set action input value based on button click
+                const actionInput = document.getElementById('actionType');
+                actionInput.value = this.getAttribute('data-action');
+            });
+        });
+    });
+
+
+</script>
+
+{% endblock %}

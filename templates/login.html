@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Log In
+{% endblock %}
+
+{% block main %}
+    <div class="auth-container min-vh-100">
+        <h2 class="text-center text-success">Log In</h2>
+        <br>
+        <form method="post" class="auth-form">
+            {{ form.hidden_tag() }}
+            <div class="mb-3">
+                {{ form.username.label(class="form-label") }}
+                {{ form.username(class="form-control auth-input", placeholder="Username") }}
+            </div>
+            <div class="mb-3">
+                {{ form.password.label(class="form-label") }}
+                {{ form.password(class="form-control auth-input", placeholder="Password") }}
+            </div>
+            <button class="btn btn-primary btn-submit auth-button" type="submit">{{ form.submit.label }}</button>
+        </form>
+        <div class="text-center mt-3">
+            <a href="/register" class="auth-link">Create an account</a>
+            <br>
+            <a href="/forgot-password" class="auth-link">Forgot password?</a>
+        </div>
+    </div>
+{% endblock %}

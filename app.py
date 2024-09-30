@@ -14,11 +14,12 @@ from helpers import apology, login_required, lookup, usd, update_user_stock, che
 from groq import Groq
 import logging
 from datetime import datetime, timedelta
+import os
 
 
 # Configure application
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'f3f90b1c7e72e8c3d2b4f5e9d6e77a6c8b9a3f2c1d4e6c7b8d9e0f1a2b3c4d5e6'
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
 # Configure Flask-Limiter, to prevent flooding attack
 limiter = Limiter(get_remote_address, app=app)
@@ -498,7 +499,8 @@ def sell_stock(user_id, symbol, shares, current_template):
 @login_required
 def recommend_user():
     if request.method == "POST":
-        client = Groq(api_key="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")
+        api_key = os.getenv('GROQ_API_KEY')
+        client = Groq(api_key=api_key)
         user_id = session["user_id"]
 
         # Retrieve and validate user input
